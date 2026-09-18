@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="card_width">232dp</dimen>
+    <dimen name="card_height">130dp</dimen>
+    <dimen name="menu_card_size">120dp</dimen>
+    <dimen name="grid_padding">32dp</dimen>
+    <dimen name="details_poster_width">320dp</dimen>
+    <dimen name="details_poster_height">180dp</dimen>
+</resources>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <integer name="grid_columns">4</integer>
+    <integer name="row_page_size">12</integer>
+    <integer name="grid_page_size">24</integer>
+</resources>

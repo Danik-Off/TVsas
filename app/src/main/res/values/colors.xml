@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="accent">#FF6B00</color>
+    <color name="accent_dark">#C25100</color>
+    <color name="bg">#151618</color>
+    <color name="bg_brand">#1E2024</color>
+    <color name="bg_card">#26282D</color>
+    <color name="bg_card_focused">#33363C</color>
+    <color name="bg_selected">#2B2E34</color>
+    <color name="text_primary">#F2F2F0</color>
+    <color name="text_secondary">#A9ABB1</color>
+    <color name="text_muted">#6E7178</color>
+    <color name="search_orb">#3A3D44</color>
+    <color name="search_orb_bright">#FF6B00</color>
+    <color name="overlay_dim">#99000000</color>
+    <color name="lock_badge">#E6151618</color>
+</resources>
