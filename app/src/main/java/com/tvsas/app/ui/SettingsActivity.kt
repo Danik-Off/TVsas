@@ -84,7 +84,8 @@ class SettingsFragment : GuidedStepSupportFragment() {
         if (Prefs.isLoggedIn) {
             actions += GuidedAction.Builder(ctx).id(ID_LOGOUT).title(R.string.settings_logout).build()
         }
-        actions += GuidedAction.Builder(ctx).id(ID_CLEAR_HISTORY).title(R.string.settings_clear_history).build()
+        actions += GuidedAction.Builder(ctx).id(ID_CLEAR_HISTORY).title(R.string.settings_clear_history)
+            .description(R.string.settings_clear_history_desc).build()
         actions += GuidedAction.Builder(ctx)
             .id(ID_ABOUT)
             .title(R.string.settings_about)
@@ -136,6 +137,7 @@ class SettingsFragment : GuidedStepSupportFragment() {
             }
             ID_CLEAR_HISTORY -> {
                 Prefs.clearHistory()
+                WatchNext.clear(ctx)
                 Toast.makeText(ctx, R.string.settings_history_cleared, Toast.LENGTH_SHORT).show()
             }
             ID_BACK -> requireActivity().finish()

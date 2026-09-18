@@ -99,6 +99,7 @@ dependencies {
     implementation(libs.androidx.core)
     implementation(libs.androidx.fragment)
     implementation(libs.androidx.leanback)
+    implementation(libs.androidx.tvprovider)
     implementation(libs.coroutines.android)
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.exoplayer.hls)

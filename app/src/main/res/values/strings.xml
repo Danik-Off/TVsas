@@ -78,6 +78,7 @@
     <string name="settings_account_no_subscription">Без подписки</string>
     <string name="settings_logout">Выйти из аккаунта</string>
     <string name="settings_clear_history">Очистить историю просмотра</string>
+    <string name="settings_clear_history_desc">В приложении и в строке «Смотреть далее» лаунчера</string>
     <string name="settings_history_cleared">История очищена</string>
     <string name="settings_about">О приложении</string>
     <string name="settings_about_desc">Версия %1$s · Неофициальный клиент sasflix.ru</string>

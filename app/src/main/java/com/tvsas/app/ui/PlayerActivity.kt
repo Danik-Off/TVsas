@@ -306,15 +306,20 @@ class PlayerFragment : VideoSupportFragment() {
         val posSec = (p.currentPosition / 1000).toInt()
         val dur = (if (p.duration > 0) p.duration / 1000 else durationSec.toLong()).toInt()
         if (posSec <= 0 || dur <= 0) return
-        Prefs.saveHistory(HistoryEntry(topic, videoUuid, posSec, dur, System.currentTimeMillis()))
+        val entry = HistoryEntry(topic, videoUuid, posSec, dur, System.currentTimeMillis())
+        Prefs.saveHistory(entry)
 
-        if (!Prefs.isLoggedIn) return
         val now = System.currentTimeMillis()
         if (force || now - lastServerSaveMs >= SERVER_SAVE_INTERVAL_MS) {
             lastServerSaveMs = now
-            val quality = p.videoFormat?.height?.takeIf { it > 0 }?.toString() ?: "auto"
-            // Fire-and-forget on the app scope; the fragment may be going away.
-            App.ioScope.launch { Api.saveProgress(videoUuid, posSec, quality) }
+            val ctx = context ?: return
+            // Launcher "Watch Next" row: keep while in progress, drop once (almost) finished.
+            if (entry.percent >= 96) WatchNext.remove(ctx, videoUuid) else WatchNext.update(ctx, entry)
+            if (Prefs.isLoggedIn) {
+                val quality = p.videoFormat?.height?.takeIf { it > 0 }?.toString() ?: "auto"
+                // Fire-and-forget on the app scope; the fragment may be going away.
+                App.ioScope.launch { Api.saveProgress(videoUuid, posSec, quality) }
+            }
         }
     }
 
