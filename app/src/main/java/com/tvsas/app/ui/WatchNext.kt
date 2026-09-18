@@ -1,5 +1,6 @@
 package com.tvsas.app.ui
 
+import android.annotation.SuppressLint
 import android.content.ContentUris
 import android.content.Context
 import android.content.Intent
@@ -20,6 +21,8 @@ import kotlinx.coroutines.launch
  * "Watch Next" row (API 26+). Every call is fire-and-forget on the IO scope and swallows
  * errors: some boxes ship without the TV provider at all.
  */
+// tvprovider 1.0.0 marks its public builders as RestrictedApi; every Watch Next client suppresses this.
+@SuppressLint("RestrictedApi")
 object WatchNext {
 
     private const val SCHEME = "tvsas"
