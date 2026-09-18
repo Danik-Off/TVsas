@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.TVsas" parent="Theme.Leanback">
+        <item name="android:colorPrimary">@color/accent</item>
+        <item name="android:colorAccent">@color/accent</item>
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="defaultBrandColor">@color/bg_brand</item>
+        <item name="defaultBrandColorDark">@color/bg</item>
+        <item name="defaultSearchColor">@color/search_orb</item>
+        <item name="defaultSearchBrightColor">@color/search_orb_bright</item>
+        <item name="defaultSearchIconColor">@color/text_primary</item>
+        <item name="defaultSectionHeaderColor">@color/text_secondary</item>
+        <item name="imageCardViewStyle">@style/Widget.TVsas.ImageCardView</item>
+        <item name="imageCardViewTitleStyle">@style/Widget.TVsas.ImageCardView.Title</item>
+        <item name="imageCardViewContentStyle">@style/Widget.TVsas.ImageCardView.Content</item>
+        <item name="imageCardViewInfoAreaStyle">@style/Widget.TVsas.ImageCardView.InfoArea</item>
+        <item name="rowHeaderStyle">@style/Widget.TVsas.RowHeader</item>
+        <item name="headerStyle">@style/Widget.TVsas.Header</item>
+    </style>
+
+    <style name="Theme.TVsas.Browse" parent="Theme.Leanback.Browse">
+        <item name="android:colorPrimary">@color/accent</item>
+        <item name="android:colorAccent">@color/accent</item>
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="defaultBrandColor">@color/bg_brand</item>
+        <item name="defaultBrandColorDark">@color/bg</item>
+        <item name="defaultSearchColor">@color/search_orb</item>
+        <item name="defaultSearchBrightColor">@color/search_orb_bright</item>
+        <item name="defaultSearchIconColor">@color/text_primary</item>
+        <item name="defaultSectionHeaderColor">@color/text_secondary</item>
+        <item name="imageCardViewStyle">@style/Widget.TVsas.ImageCardView</item>
+        <item name="imageCardViewTitleStyle">@style/Widget.TVsas.ImageCardView.Title</item>
+        <item name="imageCardViewContentStyle">@style/Widget.TVsas.ImageCardView.Content</item>
+        <item name="imageCardViewInfoAreaStyle">@style/Widget.TVsas.ImageCardView.InfoArea</item>
+        <item name="rowHeaderStyle">@style/Widget.TVsas.RowHeader</item>
+        <item name="headerStyle">@style/Widget.TVsas.Header</item>
+        <item name="browseTitleTextStyle">@style/Widget.TVsas.BrowseTitle</item>
+    </style>
+
+    <style name="Theme.TVsas.Details" parent="Theme.Leanback.Details">
+        <item name="android:colorPrimary">@color/accent</item>
+        <item name="android:colorAccent">@color/accent</item>
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="defaultBrandColor">@color/bg_brand</item>
+        <item name="defaultBrandColorDark">@color/bg</item>
+        <item name="defaultSectionHeaderColor">@color/text_secondary</item>
+        <item name="imageCardViewStyle">@style/Widget.TVsas.ImageCardView</item>
+        <item name="imageCardViewTitleStyle">@style/Widget.TVsas.ImageCardView.Title</item>
+        <item name="imageCardViewContentStyle">@style/Widget.TVsas.ImageCardView.Content</item>
+        <item name="imageCardViewInfoAreaStyle">@style/Widget.TVsas.ImageCardView.InfoArea</item>
+        <item name="rowHeaderStyle">@style/Widget.TVsas.RowHeader</item>
+        <item name="detailsActionButtonStyle">@style/Widget.TVsas.DetailsActionButton</item>
+    </style>
+
+    <style name="Theme.TVsas.Player" parent="Theme.Leanback">
+        <item name="android:colorPrimary">@color/accent</item>
+        <item name="android:colorAccent">@color/accent</item>
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="defaultBrandColor">@android:color/black</item>
+        <item name="playbackProgressPrimaryColor">@color/accent</item>
+        <item name="playbackControlsIconHighlightColor">@color/accent</item>
+        <item name="playbackControlsActionIcons">@style/Widget.TVsas.PlaybackIcons</item>
+    </style>
+
+    <style name="Theme.TVsas.GuidedStep" parent="Theme.Leanback.GuidedStep">
+        <item name="android:colorPrimary">@color/accent</item>
+        <item name="android:colorAccent">@color/accent</item>
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="guidedStepBackground">@color/bg</item>
+        <item name="guidedActionsBackground">@color/bg_brand</item>
+        <item name="guidedActionsBackgroundDark">@color/bg</item>
+        <item name="guidedActionsSelectorDrawable">@drawable/guided_selector</item>
+    </style>
+
+    <!-- Widgets -->
+
+    <style name="Widget.TVsas.ImageCardView" parent="Widget.Leanback.ImageCardViewStyle">
+        <item name="cardBackground">@color/bg_card</item>
+        <item name="cardForeground">@null</item>
+        <item name="lbImageCardViewType">Title|Content|IconOnRight</item>
+        <item name="infoAreaBackground">@color/bg_card</item>
+    </style>
+
+    <style name="Widget.TVsas.ImageCardView.Title" parent="Widget.Leanback.ImageCardView.TitleStyle">
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:maxLines">2</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:layout_marginTop">4dp</item>
+    </style>
+
+    <style name="Widget.TVsas.ImageCardView.Content" parent="Widget.Leanback.ImageCardView.ContentStyle">
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+    </style>
+
+    <style name="Widget.TVsas.ImageCardView.InfoArea" parent="Widget.Leanback.ImageCardView.InfoAreaStyle">
+        <item name="android:padding">10dp</item>
+        <item name="android:background">@color/bg_card</item>
+    </style>
+
+    <style name="Widget.TVsas.RowHeader" parent="Widget.Leanback.Row.Header">
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">18sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="Widget.TVsas.Header" parent="Widget.Leanback.Header">
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">18sp</item>
+    </style>
+
+    <style name="Widget.TVsas.BrowseTitle" parent="Widget.Leanback.Title.Text">
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">30sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="Widget.TVsas.DetailsActionButton" parent="Widget.Leanback.DetailsActionButtonStyle">
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:background">@drawable/details_action_bg</item>
+    </style>
+
+    <style name="Widget.TVsas.PlaybackIcons" parent="Widget.Leanback.PlaybackControlsActionIconsStyle" />
+
+</resources>

@@ -1,2 +1,12 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Shell scripts must stay LF for Linux CI; Windows batch files need CRLF
+gradlew text eol=lf
+*.sh text eol=lf
+*.bat text eol=crlf
+
+# Binaries
+*.png binary
+*.jar binary
+*.jks binary
