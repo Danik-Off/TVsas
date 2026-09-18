@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.core.content.ContextCompat
@@ -25,6 +26,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.datasource.HttpDataSource
+import androidx.media3.datasource.ResolvingDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
@@ -42,6 +44,8 @@ import kotlinx.coroutines.launch
 class PlayerActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // No screensaver / display sleep while the player is in front, even without remote input.
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
                 .replace(android.R.id.content, PlayerFragment().apply { arguments = intent.extras })
@@ -74,6 +78,9 @@ class PlayerFragment : VideoSupportFragment() {
     private var player: ExoPlayer? = null
     private var trackSelector: DefaultTrackSelector? = null
     private var glue: PlaybackTransportControlGlue<LeanbackPlayerAdapter>? = null
+
+    /** Where to continue when the player is re-created after onStop (screen off, HDMI switch, …). */
+    private var resumePositionMs = C.TIME_UNSET
 
     private val handler = Handler(Looper.getMainLooper())
     private var lastServerSaveMs = 0L
@@ -122,14 +129,17 @@ class PlayerFragment : VideoSupportFragment() {
             ts.parameters = ts.buildUponParameters()
                 .applyQualityCap(Prefs.maxQuality)
                 .setForceHighestSupportedBitrate(false)
-                .setAllowVideoNonSeamlessAdaptiveness(true)
+                // Old decoders stall for a second on every rendition switch; only allow switches
+                // the codec can do seamlessly, and pin the rendition when a fixed quality is chosen.
+                .setAllowVideoNonSeamlessAdaptiveness(false)
                 .build()
         }
         trackSelector = selector
 
-        // Less RAM than defaults (50 s/50 s) while still riding out short network hiccups.
+        // Enough buffer to ride out Wi-Fi hiccups on cheap boxes, still far below the RAM of a 4K
+        // default (min 20 s / max 60 s, start after 2.5 s, resume after a stall with 5 s).
         val loadControl = DefaultLoadControl.Builder()
-            .setBufferDurationsMs(15_000, 40_000, 1_500, 3_000)
+            .setBufferDurationsMs(20_000, 60_000, 2_500, 5_000)
             .setPrioritizeTimeOverSizeThresholds(true)
             .build()
 
@@ -142,13 +152,23 @@ class PlayerFragment : VideoSupportFragment() {
             .setAllowCrossProtocolRedirects(true)
             .setConnectTimeoutMs(15_000)
             .setReadTimeoutMs(20_000)
+        // Playlists come from sasflix.ru and need the auth token; segments come from presigned S3
+        // links that reject any Authorization header — so add it per request, by host.
+        val dataSource = ResolvingDataSource.Factory(http) { spec ->
+            val token = Prefs.token
+            // Exact host: segments live on reflector.sasflix.ru (S3) and must NOT get the header.
+            if (token != null && spec.uri.host == Api.HOST) {
+                spec.buildUpon().setHttpRequestHeaders(mapOf("Authorization" to "Bearer $token")).build()
+            } else spec
+        }
 
         val exo = ExoPlayer.Builder(ctx, renderers)
             .setTrackSelector(selector)
             .setLoadControl(loadControl)
-            .setMediaSourceFactory(HlsMediaSource.Factory(http).setAllowChunklessPreparation(true))
+            .setMediaSourceFactory(HlsMediaSource.Factory(dataSource).setAllowChunklessPreparation(true))
             .setSeekBackIncrementMs(10_000)
             .setSeekForwardIncrementMs(30_000)
+            .setWakeMode(C.WAKE_MODE_NETWORK) // keep CPU + Wi-Fi awake while playing
             .build()
         player = exo
 
@@ -206,12 +226,17 @@ class PlayerFragment : VideoSupportFragment() {
             .setUri(Api.videoUrl(videoUuid))
             .setMimeType(MimeTypes.APPLICATION_M3U8)
             .build()
-        exo.setMediaItem(item, if (startSec > 0) startSec * 1000L else C.TIME_UNSET)
+        val startMs = when {
+            resumePositionMs != C.TIME_UNSET -> resumePositionMs
+            startSec > 0 -> startSec * 1000L
+            else -> C.TIME_UNSET
+        }
+        exo.setMediaItem(item, startMs)
         exo.prepare()
         exo.playWhenReady = true
 
         // Logged-in users may have a newer server-side position than the local one.
-        if (Prefs.isLoggedIn && startSec == 0) {
+        if (Prefs.isLoggedIn && startSec == 0 && resumePositionMs == C.TIME_UNSET) {
             viewLifecycleOwner.lifecycleScope.launch {
                 val remote = Api.progress(videoUuid) ?: return@launch
                 val p = player ?: return@launch
@@ -232,11 +257,12 @@ class PlayerFragment : VideoSupportFragment() {
         ts.parameters = ts.buildUponParameters().applyQualityCap(maxHeight).build()
     }
 
+    /** Auto = adaptive up to the display size; a fixed value pins that rendition (no ABR switching). */
     private fun DefaultTrackSelector.Parameters.Builder.applyQualityCap(maxHeight: Int): DefaultTrackSelector.Parameters.Builder =
         if (maxHeight == Prefs.QUALITY_AUTO) {
             clearVideoSizeConstraints().setViewportSizeToPhysicalDisplaySize(true)
         } else {
-            setMaxVideoSize(Int.MAX_VALUE, maxHeight)
+            setMaxVideoSize(Int.MAX_VALUE, maxHeight).setMinVideoSize(0, maxHeight).setExceedVideoConstraintsIfNecessary(true)
         }
 
     private fun saveProgress(force: Boolean) {
@@ -258,6 +284,9 @@ class PlayerFragment : VideoSupportFragment() {
 
     private fun releasePlayer() {
         handler.removeCallbacks(progressTicker)
+        player?.let { p ->
+            if (p.playbackState != Player.STATE_ENDED && p.currentPosition > 0) resumePositionMs = p.currentPosition
+        }
         glue?.host = null
         glue = null
         player?.release()

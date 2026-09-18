@@ -4,12 +4,17 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    open-pull-requests-limit: 5
     groups:
       androidx:
         patterns: ["androidx.*"]
-      media3:
-        patterns: ["androidx.media3*"]
-    open-pull-requests-limit: 5
+    ignore:
+      # OkHttp 5 is a major API change; stay on 4.x deliberately.
+      - dependency-name: "com.squareup.okhttp3:okhttp"
+        update-types: ["version-update:semver-major"]
+      # Newer AndroidX/Media3 minors raise minSdk above 21, which this app supports on purpose.
+      - dependency-name: "androidx.*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
 
   - package-ecosystem: github-actions
     directory: /

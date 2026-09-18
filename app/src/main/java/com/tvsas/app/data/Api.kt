@@ -24,7 +24,8 @@ class ApiException(message: String, val code: Int = 0) : IOException(message)
  * Endpoints are taken from the open-source engine (github.com/bezumkin/orbita).
  */
 object Api {
-    const val BASE = "https://sasflix.ru"
+    const val HOST = "sasflix.ru"
+    const val BASE = "https://$HOST"
     private const val API = "$BASE/api"
     const val USER_AGENT = "TVsas/1.0 (Android TV; unofficial sasflix.ru client)"
     private const val HEADER_TTL = "X-App-Cache-Ttl"
