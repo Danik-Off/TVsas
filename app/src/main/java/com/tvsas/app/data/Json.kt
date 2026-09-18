@@ -101,6 +101,41 @@ object Json {
         )
     }
 
+    /** {"00:00":"Начало","02:52":"Безвиз с Китаем", "1:02:10":"…"} */
+    fun chapters(root: JSONObject?): List<Chapter> {
+        if (root == null) return emptyList()
+        val out = ArrayList<Chapter>()
+        val keys = root.keys()
+        while (keys.hasNext()) {
+            val k = keys.next()
+            val sec = parseTimecode(k) ?: continue
+            val title = root.optString(k).trim()
+            if (title.isNotEmpty()) out += Chapter(sec, title)
+        }
+        return out.sortedBy { it.startSec }
+    }
+
+    fun parseTimecode(s: String): Int? {
+        val parts = s.trim().split(":")
+        if (parts.isEmpty() || parts.size > 3) return null
+        var total = 0
+        for (p in parts) {
+            val n = p.toIntOrNull() ?: return null
+            total = total * 60 + n
+        }
+        return total
+    }
+
+    fun storyboard(root: JSONObject?): Storyboard? {
+        val file = root?.optObject("file") ?: return null
+        val uuid = file.optStringOrNull("uuid") ?: return null
+        val tiles = root.optJSONArray("tiles").map {
+            Storyboard.Tile(it.optInt("startTime"), it.optInt("x"), it.optInt("y"))
+        }.sortedBy { it.startSec }
+        if (tiles.isEmpty()) return null
+        return Storyboard(uuid, root.optInt("tileWidth", 213), root.optInt("tileHeight", 120), tiles)
+    }
+
     fun progress(root: JSONObject?): PlaybackProgress? {
         if (root == null || root.length() == 0) return null
         return PlaybackProgress(root.optInt("time"), root.optStringOrNull("quality"))

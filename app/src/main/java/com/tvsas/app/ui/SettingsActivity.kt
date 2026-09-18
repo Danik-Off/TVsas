@@ -27,6 +27,7 @@ class SettingsActivity : FragmentActivity() {
 class SettingsFragment : GuidedStepSupportFragment() {
 
     private val qualities = intArrayOf(Prefs.QUALITY_AUTO, 2160, 1440, 1080, 720, 480)
+    private val seekSteps = intArrayOf(5, 10, 15, 30, 60, 120)
 
     override fun onCreateGuidance(savedInstanceState: Bundle?): GuidanceStylist.Guidance =
         GuidanceStylist.Guidance(
@@ -52,6 +53,20 @@ class SettingsFragment : GuidedStepSupportFragment() {
             .title(R.string.settings_quality)
             .description(qualityLabel(Prefs.maxQuality) + " — " + getString(R.string.settings_quality_desc))
             .subActions(subActions)
+            .build()
+
+        actions += GuidedAction.Builder(ctx)
+            .id(ID_SEEK_STEP)
+            .title(R.string.settings_seek_step)
+            .description(seekStepLabel(Prefs.seekStepSec) + " — " + getString(R.string.settings_seek_step_desc))
+            .subActions(seekSteps.map { s ->
+                GuidedAction.Builder(ctx)
+                    .id(ID_SEEK_STEP_BASE + s)
+                    .title(seekStepLabel(s))
+                    .checkSetId(2)
+                    .checked(s == Prefs.seekStepSec)
+                    .build()
+            })
             .build()
 
         actions += GuidedAction.Builder(ctx)
@@ -90,6 +105,15 @@ class SettingsFragment : GuidedStepSupportFragment() {
     }
 
     override fun onSubGuidedActionClicked(action: GuidedAction): Boolean {
+        if (action.id >= ID_SEEK_STEP_BASE) {
+            val s = (action.id - ID_SEEK_STEP_BASE).toInt()
+            if (s in seekSteps) {
+                Prefs.seekStepSec = s
+                findActionById(ID_SEEK_STEP)?.description = seekStepLabel(s) + " — " + getString(R.string.settings_seek_step_desc)
+                notifyActionChanged(findActionPositionById(ID_SEEK_STEP))
+            }
+            return true
+        }
         val q = (action.id - ID_QUALITY_BASE).toInt()
         if (q in qualities) {
             Prefs.maxQuality = q
@@ -118,6 +142,8 @@ class SettingsFragment : GuidedStepSupportFragment() {
         }
     }
 
+    private fun seekStepLabel(s: Int): String = getString(R.string.seek_step_value, s)
+
     private fun qualityLabel(q: Int): String =
         if (q == Prefs.QUALITY_AUTO) getString(R.string.settings_quality_auto) else "${q}p"
 
@@ -128,6 +154,8 @@ class SettingsFragment : GuidedStepSupportFragment() {
         const val ID_CLEAR_HISTORY = 4L
         const val ID_ABOUT = 5L
         const val ID_BACK = 6L
+        const val ID_SEEK_STEP = 7L
         const val ID_QUALITY_BASE = 1000L
+        const val ID_SEEK_STEP_BASE = 5000L
     }
 }

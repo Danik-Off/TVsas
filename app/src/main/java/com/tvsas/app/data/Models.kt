@@ -104,6 +104,29 @@ data class User(
     val subscriptionActiveUntil: String?,
 )
 
+/** A chapter marker from the video's description ("mm:ss" → title). */
+data class Chapter(val startSec: Int, val title: String)
+
+/** Sprite sheet of preview frames used by the seek bar. */
+data class Storyboard(
+    val fileUuid: String,
+    val tileWidth: Int,
+    val tileHeight: Int,
+    val tiles: List<Tile>,
+) {
+    data class Tile(val startSec: Int, val x: Int, val y: Int)
+
+    val sheetWidth: Int get() = (tiles.maxOfOrNull { it.x } ?: 0) + tileWidth
+    val sheetHeight: Int get() = (tiles.maxOfOrNull { it.y } ?: 0) + tileHeight
+
+    /** Tile that covers [positionSec] (the last one starting at or before it). */
+    fun tileAt(positionSec: Int): Tile? {
+        var best: Tile? = null
+        for (t in tiles) { if (t.startSec <= positionSec) best = t else break }
+        return best
+    }
+}
+
 data class PlaybackProgress(
     val timeSec: Int,
     val quality: String?,

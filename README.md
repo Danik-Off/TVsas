@@ -16,6 +16,8 @@
 - Поиск (с клавиатуры пульта или голосом)
 - Вход по логину/паролю от sasflix.ru — открывает видео по подписке. Экранная клавиатура встроена в приложение: работает даже на приставках без системной клавиатуры
 - Воспроизведение HLS через ExoPlayer: 240p–2160p, выбор качества прямо в плеере; экран не гаснет во время просмотра, после паузы/сна воспроизведение продолжается с того же места
+- Перемотка с пульта: шаг одного нажатия настраивается (5–120 с), при перемотке показываются время и превью-кадр; «вверх» на полосе прокрутки прячет панель
+- Главы видео: название текущей главы в плеере и кнопки «предыдущая/следующая глава»
 - «Продолжить просмотр»: позиция запоминается локально и (при входе) синхронизируется с сайтом
 - Полностью управляется пультом (D-pad), интерфейс на русском
 
@@ -57,6 +59,7 @@ sasflix.ru работает на открытом движке [Orbita](https://
 | `GET /api/web/categories`, `GET /api/web/search?query` | категории, поиск |
 | `POST /api/security/login` → `token` | вход; далее `Authorization: Bearer` |
 | `GET /api/video/{uuid}?token=` | HLS master-плейлист (сегменты отдаёт S3/CDN) |
+| `GET /api/video/{uuid}/chapters`, `GET /api/video/{uuid}/thumbnails` | главы и раскадровка для полосы перемотки |
 | `GET/POST /api/user/video/{uuid}` | позиция просмотра на сервере |
 | `GET /api/image/{uuid}?w&h&fit=crop&fm=webp` | обложки нужного размера |
 
@@ -72,7 +75,8 @@ app/src/main/java/com/tvsas/app
 │   ├── MainFragment    # BrowseSupportFragment — главный экран
 │   ├── GridActivity    # VerticalGrid — категория целиком, пагинация
 │   ├── DetailsActivity # карточка публикации, кнопки «Смотреть / Продолжить»
-│   ├── PlayerActivity  # ExoPlayer + Leanback transport controls
+│   ├── PlayerActivity  # ExoPlayer + Leanback transport controls, главы
+│   ├── SeekProvider    # шаг перемотки + превью-кадры из раскадровки
 │   ├── SearchActivity  # SearchSupportFragment
 │   ├── LoginActivity   # форма входа со встроенной D-pad клавиатурой
 │   └── SettingsActivity# качество, аккаунт, история, о приложении

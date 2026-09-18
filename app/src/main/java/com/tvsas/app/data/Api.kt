@@ -111,6 +111,17 @@ object Api {
         runCatching { client.cache?.evictAll() }
     }
 
+    // ---- Seek bar extras ----
+
+    suspend fun chapters(videoUuid: String): List<Chapter> =
+        runCatching { Json.chapters(getJson("$API/video/$videoUuid/chapters", cacheSeconds = 3600)) }.getOrDefault(emptyList())
+
+    suspend fun storyboard(videoUuid: String): Storyboard? =
+        runCatching { Json.storyboard(getJson("$API/video/$videoUuid/thumbnails", cacheSeconds = 3600)) }.getOrNull()
+
+    /** The storyboard sprite scaled to [width] px so an old box never decodes a 2000×8000 image. */
+    fun storyboardUrl(fileUuid: String, width: Int): String = "$API/image/$fileUuid?w=$width"
+
     // ---- Playback progress (server side, logged-in users only) ----
 
     suspend fun progress(videoUuid: String): PlaybackProgress? =

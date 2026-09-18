@@ -5,6 +5,8 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.view.KeyEvent
+import android.view.View
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.annotation.OptIn
@@ -36,9 +38,12 @@ import androidx.media3.ui.leanback.LeanbackPlayerAdapter
 import com.tvsas.app.App
 import com.tvsas.app.R
 import com.tvsas.app.data.Api
+import com.tvsas.app.data.Chapter
 import com.tvsas.app.data.HistoryEntry
+import com.tvsas.app.data.Storyboard
 import com.tvsas.app.data.Prefs
 import com.tvsas.app.data.Topic
+import com.tvsas.app.util.Format
 import kotlinx.coroutines.launch
 
 class PlayerActivity : FragmentActivity() {
@@ -77,7 +82,11 @@ class PlayerFragment : VideoSupportFragment() {
 
     private var player: ExoPlayer? = null
     private var trackSelector: DefaultTrackSelector? = null
-    private var glue: PlaybackTransportControlGlue<LeanbackPlayerAdapter>? = null
+    private var glue: Glue? = null
+    private var seekProvider: SeekProvider? = null
+    private var chapters: List<Chapter> = emptyList()
+    private var storyboard: Storyboard? = null
+    private var extrasLoaded = false
 
     /** Where to continue when the player is re-created after onStop (screen off, HDMI switch, …). */
     private var resumePositionMs = C.TIME_UNSET
@@ -99,6 +108,10 @@ class PlayerFragment : VideoSupportFragment() {
         durationSec = args.getInt(ARG_DURATION).takeIf { it > 0 } ?: topic.durationSec
         startSec = args.getInt(ARG_START)
     }
+
+    /** Leanback shows the thumbnail strip only while the user is scrubbing. */
+    private fun isSeeking(): Boolean =
+        view?.findViewById<View>(androidx.leanback.R.id.thumbs_row)?.visibility == View.VISIBLE
 
     override fun onStart() {
         super.onStart()
@@ -166,8 +179,8 @@ class PlayerFragment : VideoSupportFragment() {
             .setTrackSelector(selector)
             .setLoadControl(loadControl)
             .setMediaSourceFactory(HlsMediaSource.Factory(dataSource).setAllowChunklessPreparation(true))
-            .setSeekBackIncrementMs(10_000)
-            .setSeekForwardIncrementMs(30_000)
+            .setSeekBackIncrementMs(Prefs.seekStepSec * 1000L)
+            .setSeekForwardIncrementMs(Prefs.seekStepSec * 1000L)
             .setWakeMode(C.WAKE_MODE_NETWORK) // keep CPU + Wi-Fi awake while playing
             .build()
         player = exo
@@ -184,43 +197,24 @@ class PlayerFragment : VideoSupportFragment() {
             }
 
             override fun onPlaybackStateChanged(playbackState: Int) {
-                if (playbackState == Player.STATE_ENDED) {
-                    saveProgress(force = true)
-                    activity?.finish()
+                when (playbackState) {
+                    Player.STATE_READY -> setupSeek()
+                    Player.STATE_ENDED -> {
+                        saveProgress(force = true)
+                        activity?.finish()
+                    }
                 }
             }
         })
 
-        val adapter = LeanbackPlayerAdapter(ctx, exo, 500)
-        val g = object : PlaybackTransportControlGlue<LeanbackPlayerAdapter>(ctx, adapter) {
-            override fun onCreateSecondaryActions(adapter: ArrayObjectAdapter) {
-                super.onCreateSecondaryActions(adapter)
-                adapter.add(QualityAction(ctx))
-            }
-
-            override fun onActionClicked(action: Action) {
-                if (action is QualityAction) {
-                    action.nextIndex()
-                    Prefs.maxQuality = action.currentHeight()
-                    applyQuality(action.currentHeight())
-                    notifyActionChanged(action)
-                } else {
-                    super.onActionClicked(action)
-                }
-            }
-
-            private fun notifyActionChanged(action: Action) {
-                val secondary = controlsRow?.secondaryActionsAdapter as? ArrayObjectAdapter ?: return
-                val idx = secondary.indexOf(action)
-                if (idx >= 0) secondary.notifyArrayItemRangeChanged(idx, 1)
-            }
-        }
+        val g = Glue(ctx, LeanbackPlayerAdapter(ctx, exo, 500))
         g.host = VideoSupportFragmentGlueHost(this)
         g.title = topic.title
-        g.subtitle = listOfNotNull(topic.categoryTitle, topic.levelTitle?.takeIf { topic.paid }).joinToString(" · ")
+        g.subtitle = baseSubtitle()
         g.isSeekEnabled = true
         g.isControlsOverlayAutoHideEnabled = true
         glue = g
+        if (!extrasLoaded) loadExtras()
 
         val item = MediaItem.Builder()
             .setUri(Api.videoUrl(videoUuid))
@@ -250,6 +244,48 @@ class PlayerFragment : VideoSupportFragment() {
 
         lastServerSaveMs = System.currentTimeMillis()
         handler.postDelayed(progressTicker, PROGRESS_INTERVAL_MS)
+    }
+
+    private fun baseSubtitle(): String =
+        listOfNotNull(topic.categoryTitle, topic.levelTitle?.takeIf { topic.paid }).joinToString(" · ")
+
+    /** Chapters and the storyboard sprite are optional extras; playback never waits for them. */
+    private fun loadExtras() {
+        extrasLoaded = true
+        viewLifecycleOwner.lifecycleScope.launch {
+            chapters = Api.chapters(videoUuid)
+            storyboard = Api.storyboard(videoUuid)
+            if (chapters.isNotEmpty()) glue?.addChapterActions()
+            setupSeek()
+        }
+    }
+
+    /** (Re)creates the seek positions once the duration is known; re-run when the storyboard arrives. */
+    private fun setupSeek() {
+        val p = player ?: return
+        val g = glue ?: return
+        val duration = p.duration.takeIf { it > 0 } ?: (durationSec * 1000L).takeIf { it > 0 } ?: return
+        val existing = seekProvider
+        if (existing != null && existing.hasStoryboard == (storyboard != null)) return
+        existing?.release()
+        val provider = SeekProvider(requireContext(), viewLifecycleOwner.lifecycleScope, duration, Prefs.seekStepSec * 1000L, storyboard)
+        seekProvider = provider
+        g.seekProvider = provider
+    }
+
+    private fun currentChapter(posMs: Long): Chapter? {
+        val sec = posMs / 1000
+        var best: Chapter? = null
+        for (c in chapters) { if (c.startSec <= sec) best = c else break }
+        return best
+    }
+
+    private fun seekToChapter(forward: Boolean) {
+        val p = player ?: return
+        val sec = p.currentPosition / 1000
+        val target = if (forward) chapters.firstOrNull { it.startSec > sec }
+        else chapters.lastOrNull { it.startSec < sec - 3 } ?: chapters.firstOrNull()
+        target?.let { p.seekTo(it.startSec * 1000L) }
     }
 
     private fun applyQuality(maxHeight: Int) {
@@ -289,9 +325,87 @@ class PlayerFragment : VideoSupportFragment() {
         }
         glue?.host = null
         glue = null
+        seekProvider?.release()
+        seekProvider = null
         player?.release()
         player = null
         trackSelector = null
+    }
+
+    /** Transport controls + quality switch + chapter navigation + "current chapter" subtitle. */
+    private inner class Glue(ctx: Context, adapter: LeanbackPlayerAdapter) :
+        PlaybackTransportControlGlue<LeanbackPlayerAdapter>(ctx, adapter) {
+
+        private val prevChapter = PlaybackControlsRow.SkipPreviousAction(ctx)
+        private val nextChapter = PlaybackControlsRow.SkipNextAction(ctx)
+        private var lastChapter: Chapter? = null
+        private var upOnSeekBar = false
+
+        /**
+         * The glue registers itself as the fragment's key interceptor (for media keys), so this
+         * is the only place to add key handling. UP on the seek bar — the top-most control — hides
+         * the overlay. Leanback calls tickle() (= show overlay) after this on every ACTION_DOWN,
+         * hence the hide happens on ACTION_UP.
+         */
+        override fun onKey(v: View?, keyCode: Int, event: KeyEvent): Boolean {
+            if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+                when (event.action) {
+                    KeyEvent.ACTION_DOWN -> {
+                        upOnSeekBar = isControlsOverlayVisible && !isSeeking() &&
+                            view?.findFocus()?.id == androidx.leanback.R.id.playback_progress
+                        if (upOnSeekBar) return true
+                    }
+                    KeyEvent.ACTION_UP -> if (upOnSeekBar) {
+                        upOnSeekBar = false
+                        hideControlsOverlay(true)
+                        return true
+                    }
+                }
+            }
+            return super.onKey(v, keyCode, event)
+        }
+
+        override fun onCreateSecondaryActions(adapter: ArrayObjectAdapter) {
+            super.onCreateSecondaryActions(adapter)
+            adapter.add(QualityAction(context))
+        }
+
+        fun addChapterActions() {
+            val primary = controlsRow?.primaryActionsAdapter as? ArrayObjectAdapter ?: return
+            if (primary.indexOf(prevChapter) >= 0) return
+            primary.add(0, prevChapter)
+            primary.add(nextChapter)
+        }
+
+        override fun onActionClicked(action: Action) {
+            when (action) {
+                is QualityAction -> {
+                    action.nextIndex()
+                    Prefs.maxQuality = action.currentHeight()
+                    applyQuality(action.currentHeight())
+                    notifySecondaryChanged(action)
+                }
+                prevChapter -> seekToChapter(forward = false)
+                nextChapter -> seekToChapter(forward = true)
+                else -> super.onActionClicked(action)
+            }
+        }
+
+        override fun onUpdateProgress() {
+            super.onUpdateProgress()
+            if (chapters.isEmpty()) return
+            val c = currentChapter(currentPosition)
+            if (c !== lastChapter) {
+                lastChapter = c
+                subtitle = if (c != null) Format.duration(c.startSec) + "  " + c.title else baseSubtitle()
+            }
+        }
+
+        private fun notifySecondaryChanged(action: Action) {
+            val secondary = controlsRow?.secondaryActionsAdapter as? ArrayObjectAdapter ?: return
+            val idx = secondary.indexOf(action)
+            if (idx >= 0) secondary.notifyArrayItemRangeChanged(idx, 1)
+        }
     }
 
     /** Secondary control that cycles the resolution cap. */

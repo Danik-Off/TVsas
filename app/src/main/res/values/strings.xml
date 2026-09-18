@@ -69,6 +69,9 @@
     <string name="settings_quality">Максимальное качество</string>
     <string name="settings_quality_auto">Авто (по экрану)</string>
     <string name="settings_quality_desc">На слабых приставках выбирайте 720p или 1080p</string>
+    <string name="settings_seek_step">Шаг перемотки</string>
+    <string name="settings_seek_step_desc">на сколько сдвигает одно нажатие влево/вправо</string>
+    <string name="seek_step_value">%1$d с</string>
     <string name="settings_account">Аккаунт</string>
     <string name="settings_account_none">Вы не вошли</string>
     <string name="settings_account_subscription">Подписка: %1$s</string>

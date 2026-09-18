@@ -10,6 +10,7 @@ object Prefs {
     private const val KEY_SUBSCRIPTION = "subscription"
     private const val KEY_MAX_QUALITY = "max_quality"
     private const val KEY_HISTORY = "history"
+    private const val KEY_SEEK_STEP = "seek_step"
 
     const val QUALITY_AUTO = 0
     private const val HISTORY_LIMIT = 20
@@ -38,6 +39,11 @@ object Prefs {
     var maxQuality: Int
         get() = sp.getInt(KEY_MAX_QUALITY, 1080)
         set(v) = sp.edit().putInt(KEY_MAX_QUALITY, v).apply()
+
+    /** Seconds moved by one press of left/right on the seek bar (and by rewind/forward keys). */
+    var seekStepSec: Int
+        get() = sp.getInt(KEY_SEEK_STEP, 10)
+        set(v) = sp.edit().putInt(KEY_SEEK_STEP, v).apply()
 
     fun clearSession() {
         sp.edit().remove(KEY_TOKEN).remove(KEY_USERNAME).remove(KEY_SUBSCRIPTION).apply()

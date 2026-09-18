@@ -108,6 +108,25 @@ class JsonTest {
     }
 
     @Test
+    fun parsesChaptersSortedByTime() {
+        val ch = Json.chapters(JSONObject("""{"02:52":"Безвиз с Китаем","00:00":"Начало","1:02:10":"Финал","bad":"x"}"""))
+        assertEquals(listOf(0, 172, 3730), ch.map { it.startSec })
+        assertEquals("Финал", ch[2].title)
+        assertNull(Json.parseTimecode("1:2:3:4"))
+    }
+
+    @Test
+    fun parsesStoryboardAndFindsTiles() {
+        val sb = Json.storyboard(JSONObject("""{"file":{"uuid":"f1"},"tileWidth":213,"tileHeight":120,
+            "tiles":[{"startTime":0,"x":0,"y":0},{"startTime":15,"x":213,"y":0},{"startTime":30,"x":0,"y":120}]}"""))!!
+        assertEquals(426, sb.sheetWidth)
+        assertEquals(240, sb.sheetHeight)
+        assertEquals(15, sb.tileAt(29)!!.startSec)
+        assertEquals(30, sb.tileAt(1000)!!.startSec)
+        assertNull(Json.storyboard(JSONObject("{}")))
+    }
+
+    @Test
     fun corruptHistoryIsIgnored() {
         assertTrue(Json.historyFromJson("not json").isEmpty())
         assertTrue(Json.historyFromJson(null).isEmpty())
